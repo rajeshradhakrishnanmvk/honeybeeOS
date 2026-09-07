@@ -97,7 +97,9 @@ export class SpaceMission {
   }
 
   tick(dtSeconds = 1) {
-    if (this.#phase === MissionPhase.ABORTED || this.#phase === MissionPhase.PAUSED) return { changed: false, telemetry: this.#lastTelemetry };
+    if (this.#phase === MissionPhase.ABORTED || this.#phase === MissionPhase.PAUSED) {
+      return { changed: false, events: [], telemetry: this.#lastTelemetry };
+    }
     const dt = Math.max(0, Number(dtSeconds) || 0);
     let changed = false;
     const events = [];

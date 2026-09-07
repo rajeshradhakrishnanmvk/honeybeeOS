@@ -142,7 +142,11 @@ export class SpaceRuntime {
   async #upsertCell(path, content, metadata = {}) {
     const existing = await this.#hive.comb.readCell(path);
     if (existing) return this.#hive.comb.updateCell(path, content, metadata);
-    return this.#hive.comb.createCell(path, 'JSON', content, metadata);
+    try {
+      return await this.#hive.comb.createCell(path, 'JSON', content, metadata);
+    } catch (_) {
+      return this.#hive.comb.updateCell(path, content, metadata);
+    }
   }
 
   #emit(type, payload) {

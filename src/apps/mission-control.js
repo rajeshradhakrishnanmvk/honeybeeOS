@@ -1,4 +1,4 @@
-import { hive } from '../kernel/hive.js';
+import { hive } from '../sdk/index.js';
 import { Capability } from '../kernel/constants.js';
 
 export const MissionControlManifest = {
