@@ -10,6 +10,7 @@ import { HiveShell, ShellManifest } from '../apps/shell.js';
 import { Observatory, ObservatoryManifest } from '../apps/observatory.js';
 import { CalculatorApp, CalculatorManifest } from '../apps/calculator.js';
 import { SolarSystemApp, SolarSystemManifest } from '../apps/solar-system.js';
+import { MissionControlApp, MissionControlManifest } from '../apps/mission-control.js';
 
 let windowZIndex = 100;
 const openWindows = new Map();
@@ -21,7 +22,8 @@ const APP_DEFS = {
   'hive-shell':          { title: '🖥 Hive Shell',         w: 600, h: 450, App: HiveShell,            Manifest: ShellManifest },
   'observatory':         { title: '🔭 Observatory',        w: 800, h: 600, App: Observatory,          Manifest: ObservatoryManifest },
   'calculator':          { title: '🧮 Calculator',         w: 680, h: 520, App: CalculatorApp,        Manifest: CalculatorManifest },
-  'solar-system':        { title: '🪐 Solar System',       w: 980, h: 700, App: SolarSystemApp,       Manifest: SolarSystemManifest }
+  'solar-system':        { title: '🪐 Solar System',       w: 980, h: 700, App: SolarSystemApp,       Manifest: SolarSystemManifest },
+  'mission-control':     { title: '🚀 Mission Control',    w: 920, h: 640, App: MissionControlApp,    Manifest: MissionControlManifest }
 };
 
 function manifestNeedsSync(installed, builtin) {

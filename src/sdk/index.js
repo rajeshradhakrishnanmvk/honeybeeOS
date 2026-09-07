@@ -19,3 +19,6 @@ export { HoneyArtifact } from '../storage/honey.js';
 //   const result = await app.run("doThing", input);
 export { HiveApp } from '../apps/app-sdk.js';
 export { beeFactory } from '../apps/bee-factory.js';
+export { SpaceRuntime } from '../space/space-runtime.js';
+export { SpaceMission, MissionPhase } from '../space/mission.js';
+export { MU_EARTH, EARTH_RADIUS, propagateOrbitStep, telemetryFromState } from '../space/physics.js';

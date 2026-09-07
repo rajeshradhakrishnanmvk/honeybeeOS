@@ -209,8 +209,35 @@ test('Prime sieve finds correct count', () => {
   assertEqual(sieve(100), 25); // 25 primes below 100
 });
 
+test('Space physics propagation updates state', async () => {
+  const { propagateOrbitStep } = await import('../src/space/physics.js');
+  const initial = {
+    position: { x: 6_771_000, y: 0, z: 0 },
+    velocity: { x: 0, y: 7_670, z: 0 },
+    fuel: 100,
+    battery: 100,
+    time: 0
+  };
+  const next = propagateOrbitStep(initial, 1);
+  assert(next.time === 1, 'Simulation time advances by dt');
+  assert(next.position.y > initial.position.y, 'Satellite position advances along velocity vector');
+});
+
+test('Space mission launch reaches orbital operations', async () => {
+  const { SpaceMission, MissionPhase } = await import('../src/space/mission.js');
+  const mission = new SpaceMission({ id: 'TEST-MISSION' });
+  const started = mission.launch(1);
+  assert(started, 'Mission launch accepted');
+
+  for (let i = 0; i < 20; i++) {
+    mission.tick(1);
+  }
+  assertEqual(mission.phase, MissionPhase.ORBITAL_OPERATIONS);
+  assert(mission.telemetry.altitude > 300_000, 'Telemetry altitude remains orbital');
+});
+
 // Summary
 setTimeout(() => {
   console.log(`\nResults: ${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
-}, 100);
+}, 500);
