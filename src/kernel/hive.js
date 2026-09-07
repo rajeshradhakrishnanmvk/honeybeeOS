@@ -17,6 +17,7 @@ import { HoneyStore } from '../storage/honey.js';
 import { Guard } from '../security/guard.js';
 import { AppRuntime } from '../apps/app-runtime.js';
 import { HiveApp } from '../apps/app-sdk.js';
+import { SpaceRuntime } from '../space/space-runtime.js';
 
 export class Hive {
   #state = HiveState.STOPPED;
@@ -33,6 +34,7 @@ export class Hive {
   honeyStore = null;
   guard = null;
   appRuntime = null;
+  space = null;
 
   // Adaptive / chaos config
   #chaosMode = false;
@@ -98,7 +100,12 @@ export class Hive {
       // 9. Seed initial worker bees
       await this.#seedWorkers(3);
 
-      // 10. Mark running
+      // 10. Space runtime
+      this.space = new SpaceRuntime();
+      this.space.init(this);
+      kernelLog.info('Hive', 'Space runtime ready');
+
+      // 11. Mark running
       this.#state = HiveState.RUNNING;
       console.log('Queen initializing...');
       kernelLog.info('Hive', 'Queen initializing...');
@@ -108,6 +115,7 @@ export class Hive {
       this.#registerService('scheduler', 'running');
       this.#registerService('guard', 'running');
       this.#registerService('app-runtime', 'running');
+      this.#registerService('space-runtime', 'running');
 
       this.bus.emit(PheromoneType.HIVE_STARTED, { version: HIVE_VERSION }, 'hive');
 
@@ -151,6 +159,7 @@ export class Hive {
 
     this.bus?.emit(PheromoneType.HIVE_SHUTDOWN, {}, 'hive');
     this.scheduler?.stop();
+    this.space?.shutdown();
     await this.beeRuntime?.terminateAll();
 
     this.#state = HiveState.STOPPED;
@@ -224,6 +233,14 @@ export class Hive {
   async produceHoney(options) { return this.honeyStore?.produceHoney(options); }
   async getHoney(id) { return this.honeyStore?.getHoney(id); }
   async findHoney(predicate) { return this.honeyStore?.findHoney(predicate); }
+
+  createSpaceMission(options) { return this.space?.createMission(options); }
+  listSpaceMissions() { return this.space?.listMissions() || []; }
+  getSpaceMission(id) { return this.space?.getMission(id); }
+  launchSpaceMission(id, countdownSeconds) { return this.space?.launchMission(id, countdownSeconds); }
+  pauseSpaceMission(id) { return this.space?.pauseMission(id); }
+  resumeSpaceMission(id) { return this.space?.resumeMission(id); }
+  abortSpaceMission(id) { return this.space?.abortMission(id); }
 
   emit(type, payload, source) { return this.bus?.emit(type, payload, source); }
   on(type, handler) { this.bus?.on(type, handler); }

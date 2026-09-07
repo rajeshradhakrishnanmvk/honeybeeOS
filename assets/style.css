@@ -730,3 +730,105 @@ body {
   font-size: 11px;
   color: var(--text-secondary);
 }
+
+/* ─── Mission Control App ───────────────────────────────────────────── */
+.mission-control-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mission-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.mission-body {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+  padding: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.mission-stage,
+.mission-panel {
+  background: rgba(20, 20, 43, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.mission-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.mission-world {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255,255,255,0.16);
+  position: relative;
+}
+
+.mission-earth {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 56px;
+}
+
+.mission-sat {
+  position: absolute;
+  left: 70%;
+  top: 24%;
+  font-size: 28px;
+}
+
+.mission-orbit {
+  position: absolute;
+  inset: 22px;
+  border: 1px solid rgba(79, 195, 247, 0.35);
+  border-radius: 50%;
+}
+
+.mission-grid {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+}
+
+.mission-panel {
+  padding: 12px;
+  font-size: 12px;
+}
+
+.mission-panel h3 {
+  font-size: 13px;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+}
+
+.mission-panel div {
+  padding: 2px 0;
+  color: var(--text-secondary);
+}
+
+.mission-controls {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mission-log {
+  max-height: 150px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}

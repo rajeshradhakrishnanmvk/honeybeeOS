@@ -15,7 +15,7 @@ Kernel Services (PheromoneBus, Honeycomb, Guard, Scheduler)
 ↓
 Bee Runtime (Web Workers)
 ↓
-Applications (Explorer, Task Manager, Text Editor, Shell, Observatory)
+Applications (Explorer, Task Manager, Text Editor, Shell, Observatory, Mission Control)
 ↓
 Hive UI (Desktop, Windows, Canvas)
 ```
@@ -217,6 +217,18 @@ Apps are isolated from kernel internals. They communicate only through public Hi
 | Text Editor | `text-editor` | Create/edit/save documents |
 | Hive Shell | `hive-shell` | Command-line kernel access |
 | Observatory | `observatory` | Real-time OS monitor + canvas visualization |
+| Mission Control | `mission-control` | Launch and operate a simulated satellite mission |
+
+---
+
+## Space Runtime (Mission Simulation Layer)
+
+HoneyBeeOS now includes an optional **Space Runtime** that sits on top of the core kernel.
+
+- Mission lifecycle state machine: `VEHICLE_READY → COUNTDOWN → IGNITION → LIFTOFF → ASCENT → ORBIT_INSERTION → ORBITAL_OPERATIONS`
+- Two-body orbital propagation for first-pass simulation
+- Mission telemetry persisted in Honeycomb under `space/missions/*` and `space/telemetry/*`
+- Mission launch spawns subsystem bees (flight computer, guidance, navigation, propulsion, power, thermal, communications, payload)
 
 ---
 
