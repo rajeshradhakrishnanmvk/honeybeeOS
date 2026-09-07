@@ -145,11 +145,11 @@ export class MissionControlApp {
     const telemetryEl = this.#container.querySelector('#mission-telemetry');
     if (telemetryEl) {
       telemetryEl.innerHTML = `
-        <div>Altitude: ${km(telemetry.altitude || 0)}</div>
-        <div>Velocity: ${kms(telemetry.velocity || 0)}</div>
-        <div>Fuel: ${percent(telemetry.fuel || 0)}</div>
-        <div>Battery: ${percent(telemetry.battery || 0)}</div>
-        <div>Mission Time: ${Math.round(telemetry.time || 0)}s</div>
+        <div>Altitude: ${km(telemetry.altitude ?? 0)}</div>
+        <div>Velocity: ${kms(telemetry.velocity ?? 0)}</div>
+        <div>Fuel: ${percent(telemetry.fuel ?? 0)}</div>
+        <div>Battery: ${percent(telemetry.battery ?? 0)}</div>
+        <div>Mission Time: ${Math.round(telemetry.time ?? 0)}s</div>
       `;
     }
 

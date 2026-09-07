@@ -62,7 +62,7 @@ export class SpaceMission {
   get logs() { return [...this.#logs]; }
 
   launch(countdownSeconds = 5) {
-    if (this.#phase !== MissionPhase.READY && this.#phase !== MissionPhase.PAUSED) return false;
+    if (this.#phase !== MissionPhase.READY) return false;
     this.#paused = false;
     this.#phase = MissionPhase.COUNTDOWN;
     this.#countdownSeconds = Math.max(0, Math.floor(countdownSeconds));
@@ -114,6 +114,7 @@ export class SpaceMission {
         this.#advanceTimeline(events);
       }
     } else if (this.#phase !== MissionPhase.READY) {
+      this.#ensureTimelineIndex();
       this.#phaseElapsed += dt;
       const timeline = PHASE_TIMELINE[this.#timelineIndex];
       if (timeline?.durationSeconds && this.#phaseElapsed >= timeline.durationSeconds) {
@@ -156,6 +157,10 @@ export class SpaceMission {
     this.state = snapshot.state;
     this.subsystemBeeIds = snapshot.subsystemBeeIds || [];
     this.#phase = snapshot.phase || MissionPhase.READY;
+    this.#timelineIndex = Math.max(
+      -1,
+      PHASE_TIMELINE.findIndex((step) => step.phase === this.#phase)
+    );
     this.#countdownSeconds = snapshot.countdownSeconds || 0;
     this.#paused = snapshot.paused || false;
     this.#lastTelemetry = snapshot.telemetry || telemetryFromState(this.state);
@@ -171,6 +176,12 @@ export class SpaceMission {
     this.#phase = next.phase;
     this.#log(`Transitioned to ${next.phase}`);
     events.push({ type: next.event, payload: { missionId: this.id, phase: next.phase } });
+  }
+
+  #ensureTimelineIndex() {
+    if (this.#timelineIndex >= 0) return;
+    const index = PHASE_TIMELINE.findIndex((step) => step.phase === this.#phase);
+    this.#timelineIndex = index;
   }
 
   #log(message) {

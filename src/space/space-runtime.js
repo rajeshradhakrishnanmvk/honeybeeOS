@@ -20,6 +20,7 @@ export class SpaceRuntime {
   #tickSeconds = 1;
   #persistenceCounter = 0;
   #missionResumePhases = new Map();
+  #tickInProgress = false;
 
   init(hive) {
     this.#hive = hive;
@@ -102,18 +103,25 @@ export class SpaceRuntime {
   }
 
   async #tick() {
-    for (const mission of this.#missions.values()) {
-      const { events } = mission.tick(this.#tickSeconds);
-      for (const evt of events || []) {
-        this.#emit(evt.type, evt.payload);
-      }
-    }
+    if (this.#tickInProgress) return;
+    this.#tickInProgress = true;
 
-    this.#persistenceCounter += 1;
-    if (this.#persistenceCounter >= 5) {
-      this.#persistenceCounter = 0;
-      const writes = [...this.#missions.values()].map((mission) => this.#persistMission(mission));
-      await Promise.allSettled(writes);
+    try {
+      for (const mission of this.#missions.values()) {
+        const { events } = mission.tick(this.#tickSeconds);
+        for (const evt of events || []) {
+          this.#emit(evt.type, evt.payload);
+        }
+      }
+
+      this.#persistenceCounter += 1;
+      if (this.#persistenceCounter >= 5) {
+        this.#persistenceCounter = 0;
+        const writes = [...this.#missions.values()].map((mission) => this.#persistMission(mission));
+        await Promise.allSettled(writes);
+      }
+    } finally {
+      this.#tickInProgress = false;
     }
   }
 
