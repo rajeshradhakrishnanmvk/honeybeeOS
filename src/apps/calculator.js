@@ -220,11 +220,22 @@ export class CalculatorApp {
     if (!el) return;
 
     const icons = { submitted: '📋', scheduling: '🗓', completed: '🍯', failed: '❌', bee: '🐝' };
-    el.innerHTML = this.#taskLog.map(e => `
-      <div class="log-entry log-${e.type}">
-        <span class="log-icon">${icons[e.type] || '•'}</span>
-        <span class="log-msg">${e.message}</span>
-      </div>
-    `).join('');
+    el.innerHTML = '';
+    for (const e of this.#taskLog) {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${e.type}`;
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'log-icon';
+      iconSpan.textContent = icons[e.type] || '•';
+
+      const msgSpan = document.createElement('span');
+      msgSpan.className = 'log-msg';
+      msgSpan.textContent = e.message;
+
+      entry.appendChild(iconSpan);
+      entry.appendChild(msgSpan);
+      el.appendChild(entry);
+    }
   }
 }

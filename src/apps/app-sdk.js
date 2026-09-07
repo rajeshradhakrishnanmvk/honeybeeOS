@@ -107,7 +107,11 @@ export class HiveApp {
       // Poll for completion
       const interval = setInterval(() => {
         const current = this.#scheduler.getTask(task.id);
-        if (!current) { clearInterval(interval); return; }
+        if (!current) {
+          clearInterval(interval);
+          reject(new Error(`Task ${task.id} not found or expired`));
+          return;
+        }
         if (current.state === 'COMPLETED') {
           clearInterval(interval);
           resolve(current.result);

@@ -10,12 +10,14 @@
 //       ↓
 //   scheduler.submit({ type: "app:<appId>:<workName>", payload })
 //       ↓
-//   bee.worker.js executes fn via serialized work registry
+//   bee.worker.js sends WORK_REQUEST to main thread
+//       ↓
+//   BeeRuntime calls beeFactory.execute() and replies WORK_RESPONSE
 //
 // Work functions are kept in the main thread registry.
 // The bee.worker.js asks the main thread to execute them via a
-// "WORK_EXECUTE" message, keeping functions out of the worker and
-// avoiding serialization of closures.
+// WORK_REQUEST/WORK_RESPONSE round-trip, keeping functions out of
+// the worker and avoiding serialization of closures.
 
 import { kernelLog } from '../kernel/logger.js';
 
