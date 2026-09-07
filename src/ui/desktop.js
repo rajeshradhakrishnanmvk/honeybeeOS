@@ -9,11 +9,12 @@ import { TextEditorApp, TextEditorManifest } from '../apps/text-editor.js';
 import { HiveShell, ShellManifest } from '../apps/shell.js';
 import { Observatory, ObservatoryManifest } from '../apps/observatory.js';
 import { CalculatorApp, CalculatorManifest } from '../apps/calculator.js';
+import { SolarSystemApp, SolarSystemManifest } from '../apps/solar-system.js';
 
 let windowZIndex = 100;
 const openWindows = new Map();
 
-function createWindow(id, title, width, height, x, y) {
+function createWindow(id, title, width, height, x, y, onClose = null) {
   const win = document.createElement('div');
   win.className = 'hive-window';
   win.id = `window-${id}`;
@@ -45,6 +46,7 @@ function createWindow(id, title, width, height, x, y) {
   document.addEventListener('mouseup', () => dragging = false);
 
   win.querySelector('.window-close').addEventListener('click', () => {
+    onClose?.();
     win.remove();
     openWindows.delete(id);
     const taskBtn = document.querySelector(`[data-app="${id}"]`);
@@ -57,7 +59,7 @@ function createWindow(id, title, width, height, x, y) {
 
 async function openApp(id) {
   if (openWindows.has(id)) {
-    const win = openWindows.get(id);
+    const { win } = openWindows.get(id);
     win.style.zIndex = ++windowZIndex;
     return;
   }
@@ -68,7 +70,8 @@ async function openApp(id) {
     'text-editor':         { title: '📝 Text Editor',        w: 700, h: 550, App: TextEditorApp,        Manifest: TextEditorManifest },
     'hive-shell':          { title: '🖥 Hive Shell',         w: 600, h: 450, App: HiveShell,            Manifest: ShellManifest },
     'observatory':         { title: '🔭 Observatory',        w: 800, h: 600, App: Observatory,          Manifest: ObservatoryManifest },
-    'calculator':          { title: '🧮 Calculator',         w: 680, h: 520, App: CalculatorApp,        Manifest: CalculatorManifest }
+    'calculator':          { title: '🧮 Calculator',         w: 680, h: 520, App: CalculatorApp,        Manifest: CalculatorManifest },
+    'solar-system':        { title: '🪐 Solar System',       w: 980, h: 700, App: SolarSystemApp,       Manifest: SolarSystemManifest }
   };
 
   const def = appDefs[id];
@@ -80,13 +83,17 @@ async function openApp(id) {
   }
 
   const offset = openWindows.size * 25;
-  const win = createWindow(id, def.title, def.w, def.h, 80 + offset, 60 + offset);
-  openWindows.set(id, win);
+  let app = null;
+  const win = createWindow(id, def.title, def.w, def.h, 80 + offset, 60 + offset, () => {
+    app?.unmount?.();
+    hive.appRuntime.stop(id).catch(() => {});
+  });
 
   const container = document.getElementById(`wb-${id}`);
   container.style.height = '100%';
-  const app = new def.App();
+  app = new def.App();
   await app.mount(container);
+  openWindows.set(id, { win, app });
 
   const taskBtn = document.querySelector(`[data-app="${id}"]`);
   if (taskBtn) taskBtn.classList.add('active');
