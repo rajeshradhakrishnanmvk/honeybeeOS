@@ -61,7 +61,7 @@ export class AppRuntime {
     // Grant permissions
     if (this.#guard && manifest.permissions) {
       for (const perm of manifest.permissions) {
-        const resource = manifest.storageNamespace ? `${manifest.storageNamespace}/*` : '*';
+        const resource = this.#resolvePermissionResource(manifest, perm);
         await this.#guard.grantCapability({ app: manifest.id, permission: perm, resource, grantedBy: 'app-installer' });
       }
     }
@@ -102,8 +102,9 @@ export class AppRuntime {
     // Enforce permissions
     if (this.#guard && manifest.permissions) {
       for (const perm of manifest.permissions) {
+        const resource = this.#resolvePermissionResource(manifest, perm);
         try {
-          await this.#guard.enforce(appId, perm);
+          await this.#guard.enforce(appId, perm, resource);
         } catch (err) {
           kernelLog.error('AppRuntime', `Permission check failed for ${appId}: ${err.message}`);
           throw err;
@@ -138,6 +139,14 @@ export class AppRuntime {
   }
 
   isRunning(appId) { return this.#runningApps.has(appId); }
+
+  #resolvePermissionResource(manifest, permission) {
+    if (!manifest?.storageNamespace) return '*';
+    if (permission === Capability.STORAGE_READ || permission === Capability.STORAGE_WRITE) {
+      return `${manifest.storageNamespace}/*`;
+    }
+    return '*';
+  }
 
   #validateManifest(manifest) {
     if (!manifest.id) throw new Error('Manifest must have an id');

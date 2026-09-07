@@ -136,7 +136,8 @@ export class Hive {
 
   #resolveWorkerBase() {
     try {
-      const url = new URL('./workers/', import.meta.url);
+      // hive.js lives in src/kernel; workers are at project root /workers
+      const url = new URL('../../workers/', import.meta.url);
       return url.href;
     } catch (_) {
       return './workers/';
