@@ -542,3 +542,191 @@ body {
 .log-completed .log-msg { color: #66bb6a; }
 .log-submitted .log-msg { color: var(--text-primary); }
 .log-failed .log-msg { color: #ef5350; }
+
+/* ─── Solar System App ─────────────────────────────────────────────── */
+.solar-system-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: radial-gradient(circle at top, rgba(79, 195, 247, 0.08), transparent 35%), var(--bg-panel);
+}
+
+.solar-header-note {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.solar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.solar-speed-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.solar-clock {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent-blue);
+  font-family: var(--font-mono);
+}
+
+.solar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+  gap: 12px;
+  padding: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.solar-stage,
+.solar-panel {
+  background: rgba(20, 20, 43, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.solar-stage {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  min-height: 0;
+}
+
+#solar-canvas {
+  width: 100%;
+  height: auto;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  background: #050814;
+  display: block;
+}
+
+.solar-stage-note,
+.solar-source-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.solar-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.solar-panel {
+  padding: 14px;
+  overflow: auto;
+}
+
+.solar-panel h3 {
+  font-size: 14px;
+  color: var(--accent-gold);
+  margin-bottom: 12px;
+}
+
+.solar-selected-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.solar-chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(79, 195, 247, 0.08);
+  border: 1px solid rgba(79, 195, 247, 0.18);
+  color: var(--text-primary);
+}
+
+.solar-selected-copy {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.solar-progress-block + .solar-progress-block {
+  margin-top: 10px;
+}
+
+.solar-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.solar-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #0a0a17;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.solar-progress-bar div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-gold));
+}
+
+.solar-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solar-planet-row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.solar-planet-row:hover,
+.solar-planet-row.active {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: rgba(255, 215, 0, 0.06);
+}
+
+.solar-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255,255,255,0.15);
+}
+
+.solar-planet-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.solar-planet-fact {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
