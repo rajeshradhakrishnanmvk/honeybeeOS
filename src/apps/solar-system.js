@@ -88,7 +88,7 @@ const PLANETS = [
     blurb: 'The outermost major planet takes about 165 Earth years to complete one orbit.'
   }
 ];
-const ORBIT_SCALE_DENOMINATOR = Math.log10(PLANETS[PLANETS.length - 1].orbitAU + 1);
+const ORBIT_SCALE_DENOMINATOR = Math.max(...PLANETS.map((planet) => Math.log10(planet.orbitAU + 1)));
 
 function formatRotation(days) {
   const direction = days < 0 ? 'retrograde' : 'prograde';
@@ -369,7 +369,8 @@ export class SolarSystemApp {
     }
 
     const orbitProgress = ((((this.#simulationDays % selected.orbitalPeriodDays) + selected.orbitalPeriodDays) % selected.orbitalPeriodDays) / selected.orbitalPeriodDays) * 100;
-    const rotationProgress = ((((this.#simulationDays / selected.rotationPeriodDays) % 1) + 1) % 1) * 100;
+    const rotationCycle = Math.abs(selected.rotationPeriodDays);
+    const rotationProgress = ((((this.#simulationDays % rotationCycle) + rotationCycle) % rotationCycle) / rotationCycle) * 100;
 
     const orbitValue = this.#container.querySelector('#solar-orbit-progress-value');
     if (orbitValue) orbitValue.textContent = `${orbitProgress.toFixed(1)}%`;
