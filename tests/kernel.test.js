@@ -3,13 +3,16 @@
 
 // Minimal test framework
 let passed = 0, failed = 0;
+const pendingTests = [];
 
 function test(name, fn) {
   try {
     const result = fn();
     if (result instanceof Promise) {
-      result.then(() => { passed++; console.log(`✅ ${name}`); })
-           .catch(err => { failed++; console.error(`❌ ${name}: ${err.message}`); });
+      const tracked = result
+        .then(() => { passed++; console.log(`✅ ${name}`); })
+        .catch(err => { failed++; console.error(`❌ ${name}: ${err.message}`); });
+      pendingTests.push(tracked);
     } else {
       passed++;
       console.log(`✅ ${name}`);
@@ -237,7 +240,7 @@ test('Space mission launch reaches orbital operations', async () => {
 });
 
 // Summary
-setTimeout(() => {
+Promise.allSettled(pendingTests).then(() => {
   console.log(`\nResults: ${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
-}, 500);
+});

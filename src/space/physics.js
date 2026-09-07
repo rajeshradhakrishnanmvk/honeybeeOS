@@ -32,6 +32,7 @@ export function propagateOrbitStep(state, dtSeconds) {
 
   const acceleration = scale(position, -MU_EARTH / (radius * radius * radius));
   const newVelocity = add(velocity, scale(acceleration, dt));
+  // Semi-implicit Euler: update velocity first, then position with updated velocity for better stability.
   const newPosition = add(position, scale(newVelocity, dt));
 
   return {

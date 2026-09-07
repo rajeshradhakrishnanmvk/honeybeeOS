@@ -103,12 +103,9 @@ export class SpaceRuntime {
 
   async #tick() {
     for (const mission of this.#missions.values()) {
-      const { events, telemetry } = mission.tick(this.#tickSeconds);
+      const { events } = mission.tick(this.#tickSeconds);
       for (const evt of events || []) {
         this.#emit(evt.type, evt.payload);
-      }
-      if (telemetry) {
-        this.#emit('telemetry.updated', { missionId: mission.id, telemetry });
       }
     }
 
