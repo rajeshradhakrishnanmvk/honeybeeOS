@@ -246,7 +246,17 @@ export class Hive {
    *   const result = await calculator.run("calculate", { a: 10, operator: "+", b: 5 });
    */
   app(options) {
-    return new HiveApp(options, this.scheduler, this.honeyStore, this.bus);
+    return new HiveApp(
+      options,
+      this.scheduler,
+      this.honeyStore,
+      this.bus,
+      () => ({
+        scheduler: this.scheduler,
+        honeyStore: this.honeyStore,
+        bus: this.bus
+      })
+    );
   }
 
   // File access

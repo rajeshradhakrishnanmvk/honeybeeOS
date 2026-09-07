@@ -14,6 +14,35 @@ import { SolarSystemApp, SolarSystemManifest } from '../apps/solar-system.js';
 let windowZIndex = 100;
 const openWindows = new Map();
 
+const APP_DEFS = {
+  'honeycomb-explorer':  { title: '🍯 Honeycomb Explorer', w: 700, h: 500, App: HoneycombExplorerApp, Manifest: HoneycombExplorerManifest },
+  'task-manager':        { title: '🐝 Task Manager',       w: 750, h: 550, App: TaskManagerApp,       Manifest: TaskManagerManifest },
+  'text-editor':         { title: '📝 Text Editor',        w: 700, h: 550, App: TextEditorApp,        Manifest: TextEditorManifest },
+  'hive-shell':          { title: '🖥 Hive Shell',         w: 600, h: 450, App: HiveShell,            Manifest: ShellManifest },
+  'observatory':         { title: '🔭 Observatory',        w: 800, h: 600, App: Observatory,          Manifest: ObservatoryManifest },
+  'calculator':          { title: '🧮 Calculator',         w: 680, h: 520, App: CalculatorApp,        Manifest: CalculatorManifest },
+  'solar-system':        { title: '🪐 Solar System',       w: 980, h: 700, App: SolarSystemApp,       Manifest: SolarSystemManifest }
+};
+
+function manifestNeedsSync(installed, builtin) {
+  if (!installed) return true;
+  if (installed.version !== builtin.version) return true;
+  if ((installed.storageNamespace || '') !== (builtin.storageNamespace || '')) return true;
+
+  const installedPerms = [...(installed.permissions || [])].sort().join('|');
+  const builtinPerms = [...(builtin.permissions || [])].sort().join('|');
+  return installedPerms !== builtinPerms;
+}
+
+async function syncBuiltinApps() {
+  for (const [appId, def] of Object.entries(APP_DEFS)) {
+    const installed = hive.getAppManifest(appId);
+    if (manifestNeedsSync(installed, def.Manifest)) {
+      await hive.installApp(def.Manifest);
+    }
+  }
+}
+
 function createWindow(id, title, width, height, x, y, onClose = null) {
   const win = document.createElement('div');
   win.className = 'hive-window';
@@ -64,17 +93,7 @@ async function openApp(id) {
     return;
   }
 
-  const appDefs = {
-    'honeycomb-explorer':  { title: '🍯 Honeycomb Explorer', w: 700, h: 500, App: HoneycombExplorerApp, Manifest: HoneycombExplorerManifest },
-    'task-manager':        { title: '🐝 Task Manager',       w: 750, h: 550, App: TaskManagerApp,       Manifest: TaskManagerManifest },
-    'text-editor':         { title: '📝 Text Editor',        w: 700, h: 550, App: TextEditorApp,        Manifest: TextEditorManifest },
-    'hive-shell':          { title: '🖥 Hive Shell',         w: 600, h: 450, App: HiveShell,            Manifest: ShellManifest },
-    'observatory':         { title: '🔭 Observatory',        w: 800, h: 600, App: Observatory,          Manifest: ObservatoryManifest },
-    'calculator':          { title: '🧮 Calculator',         w: 680, h: 520, App: CalculatorApp,        Manifest: CalculatorManifest },
-    'solar-system':        { title: '🪐 Solar System',       w: 980, h: 700, App: SolarSystemApp,       Manifest: SolarSystemManifest }
-  };
-
-  const def = appDefs[id];
+  const def = APP_DEFS[id];
   if (!def) return;
 
   // Ensure app is installed
@@ -100,6 +119,8 @@ async function openApp(id) {
 }
 
 export async function initDesktop() {
+  await syncBuiltinApps();
+
   // Update taskbar status
   updateTaskbarStatus();
   setInterval(updateTaskbarStatus, 1000);

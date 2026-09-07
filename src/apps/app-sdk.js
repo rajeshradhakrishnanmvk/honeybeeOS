@@ -39,10 +39,11 @@ export class HiveApp {
   #scheduler;
   #honeyStore;
   #bus;
+  #servicesResolver;
   #workOptions = new Map();  // workName → options
   #started = false;
 
-  constructor({ id, name, version = '1.0.0' }, scheduler, honeyStore, bus) {
+  constructor({ id, name, version = '1.0.0' }, scheduler, honeyStore, bus, servicesResolver = null) {
     if (!id) throw new Error('App id is required');
     if (!name) throw new Error('App name is required');
     this.#id = id;
@@ -51,6 +52,7 @@ export class HiveApp {
     this.#scheduler = scheduler;
     this.#honeyStore = honeyStore;
     this.#bus = bus;
+    this.#servicesResolver = servicesResolver;
   }
 
   get id() { return this.#id; }
@@ -91,11 +93,16 @@ export class HiveApp {
     this.#assertStarted();
     this.#assertWork(workName);
 
+    const scheduler = this.#resolveScheduler();
+    if (!scheduler) {
+      throw new Error(`Hive scheduler is not ready for app "${this.#id}"`);
+    }
+
     const opts = this.#workOptions.get(workName);
     const taskType = beeFactory.taskType(this.#id, workName);
 
     return new Promise((resolve, reject) => {
-      const task = this.#scheduler.submit({
+      const task = scheduler.submit({
         type: taskType,
         payload: { appId: this.#id, workName, input },
         priority: opts.priority,
@@ -106,7 +113,7 @@ export class HiveApp {
 
       // Poll for completion
       const interval = setInterval(() => {
-        const current = this.#scheduler.getTask(task.id);
+        const current = scheduler.getTask(task.id);
         if (!current) {
           clearInterval(interval);
           reject(new Error(`Task ${task.id} not found or expired`));
@@ -138,7 +145,8 @@ export class HiveApp {
    * Store data in the Honey store, scoped to this app.
    */
   async store(key, value) {
-    return this.#honeyStore?.produceHoney({
+    const honeyStore = this.#resolveHoneyStore();
+    return honeyStore?.produceHoney({
       content: value,
       type: `app:${this.#id}:store`,
       producerBeeId: null,
@@ -187,5 +195,19 @@ export class HiveApp {
     if (!beeFactory.has(this.#id, workName)) {
       throw new Error(`No work named "${workName}" registered on app "${this.#id}"`);
     }
+  }
+
+  #resolveScheduler() {
+    if (this.#scheduler) return this.#scheduler;
+    const services = this.#servicesResolver?.();
+    if (services?.scheduler) this.#scheduler = services.scheduler;
+    return this.#scheduler;
+  }
+
+  #resolveHoneyStore() {
+    if (this.#honeyStore) return this.#honeyStore;
+    const services = this.#servicesResolver?.();
+    if (services?.honeyStore) this.#honeyStore = services.honeyStore;
+    return this.#honeyStore;
   }
 }
