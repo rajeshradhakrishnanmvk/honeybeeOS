@@ -8,6 +8,7 @@ import { TaskManagerApp, TaskManagerManifest } from '../apps/task-manager.js';
 import { TextEditorApp, TextEditorManifest } from '../apps/text-editor.js';
 import { HiveShell, ShellManifest } from '../apps/shell.js';
 import { Observatory, ObservatoryManifest } from '../apps/observatory.js';
+import { CalculatorApp, CalculatorManifest } from '../apps/calculator.js';
 
 let windowZIndex = 100;
 const openWindows = new Map();
@@ -66,7 +67,8 @@ async function openApp(id) {
     'task-manager':        { title: '🐝 Task Manager',       w: 750, h: 550, App: TaskManagerApp,       Manifest: TaskManagerManifest },
     'text-editor':         { title: '📝 Text Editor',        w: 700, h: 550, App: TextEditorApp,        Manifest: TextEditorManifest },
     'hive-shell':          { title: '🖥 Hive Shell',         w: 600, h: 450, App: HiveShell,            Manifest: ShellManifest },
-    'observatory':         { title: '🔭 Observatory',        w: 800, h: 600, App: Observatory,          Manifest: ObservatoryManifest }
+    'observatory':         { title: '🔭 Observatory',        w: 800, h: 600, App: Observatory,          Manifest: ObservatoryManifest },
+    'calculator':          { title: '🧮 Calculator',         w: 680, h: 520, App: CalculatorApp,        Manifest: CalculatorManifest }
   };
 
   const def = appDefs[id];

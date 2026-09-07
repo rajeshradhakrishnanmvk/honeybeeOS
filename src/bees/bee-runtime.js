@@ -8,6 +8,7 @@
 import { BeeState, BeeType, WorkerCommand, WorkerMessage, HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT, MAX_BEES } from '../kernel/constants.js';
 import { PheromoneType } from '../ipc/pheromones.js';
 import { kernelLog } from '../kernel/logger.js';
+import { beeFactory } from '../apps/bee-factory.js';
 
 export class Bee {
   constructor({ id, type = BeeType.WORKER, workerUrl, metadata = {} }) {
@@ -181,6 +182,11 @@ export class BeeRuntime {
         this.#cleanupBee(bee);
         this.#bus?.emit(PheromoneType.BEE_TERMINATED, { bee: bee.toSnapshot() }, 'bee-runtime');
         break;
+
+      case 'WORK_REQUEST':
+        // Worker needs the main thread to run an app:* work function
+        this.#handleWorkRequest(bee, payload);
+        break;
     }
   }
 
@@ -221,6 +227,21 @@ export class BeeRuntime {
     const timer = this.#heartbeatTimers.get(bee.id);
     if (timer) { clearInterval(timer); this.#heartbeatTimers.delete(bee.id); }
     try { bee._worker?.terminate(); } catch (_) {}
+  }
+
+  async #handleWorkRequest(bee, payload) {
+    const { requestId, taskType, taskPayload } = payload;
+    // taskType is "app:<appId>:<workName>"
+    const parts = taskType.split(':');
+    const appId = parts[1];
+    const workName = parts.slice(2).join(':');
+    try {
+      const context = { beeId: bee.id, appId, taskType };
+      const result = await beeFactory.execute(appId, workName, taskPayload?.input ?? taskPayload, context);
+      bee._worker?.postMessage({ type: 'WORK_RESPONSE', beeId: bee.id, payload: { requestId, result } });
+    } catch (err) {
+      bee._worker?.postMessage({ type: 'WORK_RESPONSE', beeId: bee.id, payload: { requestId, error: err.message } });
+    }
   }
 
   async executeOnBee(beeId, taskId, taskType, taskPayload, timeout = 60000) {

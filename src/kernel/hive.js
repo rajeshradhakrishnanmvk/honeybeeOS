@@ -16,6 +16,7 @@ import { Comb } from '../storage/honeycomb.js';
 import { HoneyStore } from '../storage/honey.js';
 import { Guard } from '../security/guard.js';
 import { AppRuntime } from '../apps/app-runtime.js';
+import { HiveApp } from '../apps/app-sdk.js';
 
 export class Hive {
   #state = HiveState.STOPPED;
@@ -235,6 +236,17 @@ export class Hive {
   async stopApp(id) { return this.appRuntime?.stop(id); }
   listApps() { return this.appRuntime?.list() || []; }
   getAppManifest(id) { return this.appRuntime?.getManifest(id); }
+
+  /**
+   * Application SDK — primary developer-facing API.
+   *
+   *   const calculator = hive.app({ id: "calculator", name: "Calculator" });
+   *   calculator.work("calculate", ({ a, operator, b }) => { ... });
+   *   const result = await calculator.run("calculate", { a: 10, operator: "+", b: 5 });
+   */
+  app(options) {
+    return new HiveApp(options, this.scheduler, this.honeyStore, this.bus);
+  }
 
   // File access
   async importFile() {
