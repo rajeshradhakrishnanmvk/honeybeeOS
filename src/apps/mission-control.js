@@ -130,7 +130,7 @@ export class MissionControlApp {
       return;
     }
     const mission = hive.createSpaceMission({
-      id: 'HB-001',
+      id: `HB-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       name: 'HoneyBee Explorer',
       vehicle: 'HB-SAT-001',
       orbit: { altitude: 400_000, inclination: 51.6 }

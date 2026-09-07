@@ -89,8 +89,9 @@ export class SpaceRuntime {
   }
 
   async #spawnSubsystemBees(mission) {
-    if (mission.subsystemBeeIds.length > 0) return;
-    for (const role of SUBSYSTEM_ROLES) {
+    if (mission.subsystemBeeIds.length >= SUBSYSTEM_ROLES.length) return;
+    const startIndex = mission.subsystemBeeIds.length;
+    for (const role of SUBSYSTEM_ROLES.slice(startIndex)) {
       const bee = await this.#hive.spawnBee({
         metadata: {
           role,
