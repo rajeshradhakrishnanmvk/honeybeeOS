@@ -21,6 +21,7 @@ export class SpaceRuntime {
   #persistenceCounter = 0;
   #missionResumePhases = new Map();
   #tickInProgress = false;
+  #writeLocks = new Map();
 
   init(hive) {
     this.#hive = hive;
@@ -140,13 +141,15 @@ export class SpaceRuntime {
   }
 
   async #upsertCell(path, content, metadata = {}) {
-    const existing = await this.#hive.comb.readCell(path);
-    if (existing) return this.#hive.comb.updateCell(path, content, metadata);
-    try {
-      return await this.#hive.comb.createCell(path, 'JSON', content, metadata);
-    } catch (_) {
-      return this.#hive.comb.updateCell(path, content, metadata);
-    }
+    return this.#queuePathWrite(path, async () => {
+      const existing = await this.#hive.comb.readCell(path);
+      if (existing) return this.#hive.comb.updateCell(path, content, metadata);
+      try {
+        return await this.#hive.comb.createCell(path, 'JSON', content, metadata);
+      } catch (_) {
+        return this.#hive.comb.updateCell(path, content, metadata);
+      }
+    });
   }
 
   #emit(type, payload) {
@@ -166,5 +169,18 @@ export class SpaceRuntime {
     const mission = this.#missions.get(id);
     if (!mission) throw new Error(`Mission not found: ${id}`);
     return mission;
+  }
+
+  #queuePathWrite(path, operation) {
+    const previous = this.#writeLocks.get(path) || Promise.resolve();
+    const next = previous
+      .catch(() => {})
+      .then(operation);
+    this.#writeLocks.set(path, next.finally(() => {
+      if (this.#writeLocks.get(path) === next) {
+        this.#writeLocks.delete(path);
+      }
+    }));
+    return next;
   }
 }

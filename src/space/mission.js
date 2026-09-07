@@ -19,6 +19,8 @@ const PHASE_TIMELINE = [
   { phase: MissionPhase.ORBIT_INSERTION, durationSeconds: 3, event: 'launch.orbit.insertion' },
   { phase: MissionPhase.ORBITAL_OPERATIONS, durationSeconds: 0, event: 'satellite.deployed' }
 ];
+const FUEL_DRAIN_RATE_PER_SECOND = 0.0008;
+const BATTERY_DRAIN_RATE_PER_SECOND = 0.0005;
 
 export class SpaceMission {
   #phase = MissionPhase.READY;
@@ -73,7 +75,7 @@ export class SpaceMission {
   }
 
   pause() {
-    if (this.#phase === MissionPhase.ABORTED || this.#phase === MissionPhase.READY) return false;
+    if (this.#phase === MissionPhase.ABORTED || this.#phase === MissionPhase.READY || this.#phase === MissionPhase.PAUSED) return false;
     this.#paused = true;
     this.#phase = MissionPhase.PAUSED;
     this.#log('Mission paused');
@@ -127,8 +129,8 @@ export class SpaceMission {
 
     if (this.#phase === MissionPhase.ORBITAL_OPERATIONS) {
       this.state = propagateOrbitStep(this.state, dt);
-      this.state.fuel = Math.max(0, this.state.fuel - dt * 0.0008);
-      this.state.battery = Math.max(0, this.state.battery - dt * 0.0005);
+      this.state.fuel = Math.max(0, this.state.fuel - dt * FUEL_DRAIN_RATE_PER_SECOND);
+      this.state.battery = Math.max(0, this.state.battery - dt * BATTERY_DRAIN_RATE_PER_SECOND);
       this.#lastTelemetry = telemetryFromState(this.state);
       events.push({ type: 'telemetry.updated', payload: { missionId: this.id, telemetry: this.#lastTelemetry } });
     }

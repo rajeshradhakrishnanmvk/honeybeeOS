@@ -15,15 +15,27 @@ export const MissionControlManifest = {
 };
 
 function km(value) {
-  return `${(value / 1000).toFixed(1)} km`;
+  const numeric = Number(value) || 0;
+  return `${(numeric / 1000).toFixed(1)} km`;
 }
 
 function kms(value) {
-  return `${(value / 1000).toFixed(2)} km/s`;
+  const numeric = Number(value) || 0;
+  return `${(numeric / 1000).toFixed(2)} km/s`;
 }
 
 function percent(value) {
-  return `${Math.max(0, value).toFixed(1)}%`;
+  const numeric = Number(value) || 0;
+  return `${Math.max(0, numeric).toFixed(1)}%`;
+}
+
+function safeText(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 export class MissionControlApp {
@@ -135,9 +147,9 @@ export class MissionControlApp {
     const status = this.#container.querySelector('#mission-status');
     if (status) {
       status.innerHTML = `
-        <div>Status: <strong>${mission.phase}</strong></div>
-        <div>Mission: ${mission.name}</div>
-        <div>Vehicle: ${mission.vehicle}</div>
+        <div>Status: <strong>${safeText(mission.phase)}</strong></div>
+        <div>Mission: ${safeText(mission.name)}</div>
+        <div>Vehicle: ${safeText(mission.vehicle)}</div>
         <div>Subsystem Bees: ${mission.subsystemBeeIds?.length || 0}</div>
       `;
     }
@@ -157,7 +169,7 @@ export class MissionControlApp {
     const logsEl = this.#container.querySelector('#mission-log');
     if (logsEl) {
       logsEl.innerHTML = logs.length
-        ? logs.map((entry) => `<div>${new Date(entry.timestamp).toLocaleTimeString()} • ${entry.message}</div>`).join('')
+        ? logs.map((entry) => `<div>${new Date(entry.timestamp).toLocaleTimeString()} • ${safeText(entry.message)}</div>`).join('')
         : '<div class="empty-state">No mission events yet.</div>';
     }
   }
