@@ -1,11 +1,19 @@
 // HoneyBeeOS - Standard Bee Worker
 // This script runs inside a Web Worker.
 // It implements the standard bee worker protocol.
+//
+// For app:* task types (Application SDK), work functions live in the main
+// thread and cannot be serialized into the worker. The worker sends a
+// WORK_REQUEST message; the BeeRuntime resolves it via beeFactory.execute()
+// and returns a WORK_RESPONSE so the worker can complete the task.
 
 let beeId = null;
 let isPaused = false;
 let heartbeatInterval = null;
 const HEARTBEAT_INTERVAL = 5000;
+
+// Pending WORK_REQUEST callbacks: requestId → { resolve, reject }
+const pendingWorkRequests = new Map();
 
 function sendMessage(type, payload) {
   self.postMessage({ type, beeId, payload, timestamp: Date.now() });
@@ -27,6 +35,18 @@ self.onmessage = async function(event) {
 
     case 'PING': {
       sendMessage('PONG', { alive: true });
+      break;
+    }
+
+    case 'WORK_RESPONSE': {
+      // Main thread resolved a WORK_REQUEST for an app:* task
+      const { requestId, result, error } = payload;
+      const pending = pendingWorkRequests.get(requestId);
+      if (pending) {
+        pendingWorkRequests.delete(requestId);
+        if (error) pending.reject(new Error(error));
+        else pending.resolve(result);
+      }
       break;
     }
 
@@ -126,6 +146,20 @@ async function executeTask(payload) {
     }
 
     default: {
+      // app:* task types — delegate execution to the main thread via WORK_REQUEST/WORK_RESPONSE
+      if (taskType.startsWith('app:')) {
+        const requestId = crypto.randomUUID();
+        return new Promise((resolve, reject) => {
+          pendingWorkRequests.set(requestId, { resolve, reject });
+          reportProgress(10, `Delegating ${taskType} to application runtime`);
+          sendMessage('WORK_REQUEST', {
+            requestId,
+            taskId,
+            taskType,
+            taskPayload
+          });
+        });
+      }
       // Unknown task type - return as-is
       reportProgress(50, `Executing unknown task type: ${taskType}`);
       return { taskType, taskPayload, executed: true };

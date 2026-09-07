@@ -11,3 +11,11 @@ export { HIVE_VERSION } from '../kernel/constants.js';
 export { Task } from '../bees/scheduler.js';
 export { Cell } from '../storage/honeycomb.js';
 export { HoneyArtifact } from '../storage/honey.js';
+
+// Application SDK — developer-facing API
+// Usage:
+//   const app = hive.app({ id: "myapp", name: "My App" });
+//   app.work("doThing", (input) => { ... });
+//   const result = await app.run("doThing", input);
+export { HiveApp } from '../apps/app-sdk.js';
+export { beeFactory } from '../apps/bee-factory.js';
