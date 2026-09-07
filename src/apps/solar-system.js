@@ -255,10 +255,10 @@ export class SolarSystemApp {
     const width = this.#canvas.width;
     const height = this.#canvas.height;
     this.#stars = Array.from({ length: 140 }, (_, index) => ({
-      x: (index * 97) % width,
-      y: (index * 53) % height,
-      size: (index % 3) + 1,
-      alpha: 0.2 + ((index % 7) / 10)
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: 1 + Math.floor(Math.random() * 3),
+      alpha: 0.2 + Math.random() * 0.6
     }));
   }
 
@@ -368,8 +368,7 @@ export class SolarSystemApp {
     }
 
     const orbitProgress = ((this.#simulationDays % selected.orbitalPeriodDays) / selected.orbitalPeriodDays) * 100;
-    const rotationCycle = Math.abs(selected.rotationPeriodDays);
-    const rotationProgress = ((this.#simulationDays % rotationCycle) / rotationCycle) * 100;
+    const rotationProgress = ((((this.#simulationDays / selected.rotationPeriodDays) % 1) + 1) % 1) * 100;
 
     const orbitValue = this.#container.querySelector('#solar-orbit-progress-value');
     if (orbitValue) orbitValue.textContent = `${orbitProgress.toFixed(1)}%`;
