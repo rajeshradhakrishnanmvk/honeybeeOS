@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HoneyBeeOS</title>
+  <link rel="stylesheet" href="./assets/style.css"/>
+  <meta name="description" content="HoneyBeeOS - A browser-native operating system inspired by bee colony behavior"/>
+</head>
+<body>
+
+<!-- Boot Screen -->
+<div id="boot-screen">
+  <div class="boot-logo">🐝</div>
+  <div class="boot-title">HONEYBEEOS</div>
+  <div class="boot-subtitle">Browser-Native Colony OS</div>
+  <div class="boot-log" id="boot-log"></div>
+</div>
+
+<!-- Taskbar -->
+<div id="taskbar">
+  <span id="hive-logo">🐝 HoneyBeeOS</span>
+  <span id="hive-state-indicator"></span>
+
+  <button class="taskbar-btn" data-app="observatory">🔭 Observatory</button>
+  <button class="taskbar-btn" data-app="task-manager">🐝 Tasks</button>
+  <button class="taskbar-btn" data-app="honeycomb-explorer">🍯 Explorer</button>
+  <button class="taskbar-btn" data-app="text-editor">📝 Editor</button>
+  <button class="taskbar-btn" data-app="hive-shell">🖥 Shell</button>
+
+  <div id="taskbar-status">Initializing...</div>
+</div>
+
+<!-- Desktop -->
+<div id="desktop"></div>
+
+<!-- Kernel boot -->
+<script type="module" src="./src/boot.js"></script>
+</body>
+</html>
