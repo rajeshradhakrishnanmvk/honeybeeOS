@@ -74,7 +74,7 @@ const PLANETS = [
     rotationPeriodDays: -0.718,
     radius: 8,
     initialAngle: 3.4,
-    blurb: 'Retrograde spin reflects Uranus’s extreme axial tilt.'
+    blurb: "Retrograde spin reflects Uranus's extreme axial tilt."
   },
   {
     name: 'Neptune',
@@ -143,6 +143,7 @@ export class SolarSystemApp {
     this.#ctx = this.#canvas?.getContext('2d');
     this.#bindEvents();
     this.#renderLegend();
+    this.#renderSelectedPanel();
     this.#updatePanels();
     this.#startLoop();
   }
@@ -219,6 +220,7 @@ export class SolarSystemApp {
         if (Math.hypot(dx, dy) <= hitArea.radius + 6) {
           this.#selectedPlanet = name;
           this.#renderLegend();
+          this.#renderSelectedPanel();
           this.#updatePanels();
           return;
         }
@@ -343,44 +345,58 @@ export class SolarSystemApp {
 
   #updatePanels() {
     const selected = PLANETS.find((planet) => planet.name === this.#selectedPlanet) || PLANETS[2];
-    const orbitProgress = ((this.#simulationDays % selected.orbitalPeriodDays) / selected.orbitalPeriodDays) * 100;
-    const rotationProgress = ((Math.abs(this.#simulationDays % selected.rotationPeriodDays)) / Math.abs(selected.rotationPeriodDays)) * 100;
 
     const clock = this.#container.querySelector('#solar-clock');
     if (clock) {
       clock.textContent = `Simulation day ${this.#simulationDays.toFixed(1)} • Speed ${this.#daysPerSecond} day${this.#daysPerSecond === 1 ? '' : 's'}/sec`;
     }
 
+    const orbitProgress = ((this.#simulationDays % selected.orbitalPeriodDays) / selected.orbitalPeriodDays) * 100;
+    const rotationCycle = Math.abs(selected.rotationPeriodDays);
+    const rotationProgress = ((Math.abs(this.#simulationDays) % rotationCycle) / rotationCycle) * 100;
+
+    const orbitValue = this.#container.querySelector('#solar-orbit-progress-value');
+    if (orbitValue) orbitValue.textContent = `${orbitProgress.toFixed(1)}%`;
+
+    const rotationValue = this.#container.querySelector('#solar-rotation-progress-value');
+    if (rotationValue) rotationValue.textContent = `${rotationProgress.toFixed(1)}%`;
+
+    const orbitBar = this.#container.querySelector('#solar-orbit-progress-bar');
+    if (orbitBar) orbitBar.style.width = `${orbitProgress}%`;
+
+    const rotationBar = this.#container.querySelector('#solar-rotation-progress-bar');
+    if (rotationBar) rotationBar.style.width = `${rotationProgress}%`;
+  }
+
+  #renderSelectedPanel() {
+    const selected = PLANETS.find((planet) => planet.name === this.#selectedPlanet) || PLANETS[2];
     const selectedPanel = this.#container.querySelector('#solar-selected-panel');
     if (selectedPanel) {
       selectedPanel.innerHTML = `
-        <h3>${selected.name}</h3>
-        <div class="solar-selected-meta">
+        <h3 id="solar-selected-title">${selected.name}</h3>
+        <div class="solar-selected-meta" id="solar-selected-meta">
           <span class="solar-chip">Orbit: ${selected.orbitAU.toFixed(3)} AU</span>
           <span class="solar-chip">Year: ${formatOrbit(selected.orbitalPeriodDays)}</span>
           <span class="solar-chip">Day: ${formatRotation(selected.rotationPeriodDays)}</span>
         </div>
-        <p class="solar-selected-copy">${selected.blurb}</p>
+        <p class="solar-selected-copy" id="solar-selected-copy">${selected.blurb}</p>
         <div class="solar-progress-block">
           <div class="solar-progress-label">
             <span>Current orbit</span>
-            <span>${orbitProgress.toFixed(1)}%</span>
+            <span id="solar-orbit-progress-value"></span>
           </div>
-          <div class="solar-progress-bar"><div style="width:${orbitProgress}%"></div></div>
+          <div class="solar-progress-bar"><div id="solar-orbit-progress-bar"></div></div>
         </div>
         <div class="solar-progress-block">
           <div class="solar-progress-label">
             <span>Current rotation</span>
-            <span>${rotationProgress.toFixed(1)}%</span>
+            <span id="solar-rotation-progress-value"></span>
           </div>
-          <div class="solar-progress-bar"><div style="width:${rotationProgress}%"></div></div>
+          <div class="solar-progress-bar"><div id="solar-rotation-progress-bar"></div></div>
         </div>
-        <div class="solar-source-note">
-          Simulation uses factual sidereal periods for rotation and revolution; starting positions are illustrative.
-        </div>
+        <div class="solar-source-note" id="solar-source-note">Simulation uses factual sidereal periods for rotation and revolution; starting positions are illustrative.</div>
       `;
     }
-
   }
 
   #renderLegend() {
@@ -399,6 +415,7 @@ export class SolarSystemApp {
       button.addEventListener('click', () => {
         this.#selectedPlanet = button.dataset.planet;
         this.#renderLegend();
+        this.#renderSelectedPanel();
         this.#updatePanels();
       });
     });
