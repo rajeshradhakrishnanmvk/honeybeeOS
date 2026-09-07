@@ -3,6 +3,7 @@ import { hive } from '../kernel/hive.js';
 const TAU = Math.PI * 2;
 const EARTH_DAY_HOURS = 24;
 const DEFAULT_SPEED = 30;
+const PANEL_UPDATE_INTERVAL_MS = 100;
 const SPEED_OPTIONS = [1, 7, 30, 90, 365, 3650];
 
 const PLANETS = [
@@ -134,6 +135,8 @@ export class SolarSystemApp {
   #paused = false;
   #selectedPlanet = 'Earth';
   #planetHitAreas = new Map();
+  #stars = [];
+  #lastPanelRefresh = 0;
 
   async mount(container) {
     this.#container = container;
@@ -141,10 +144,11 @@ export class SolarSystemApp {
     this.render();
     this.#canvas = this.#container.querySelector('#solar-canvas');
     this.#ctx = this.#canvas?.getContext('2d');
+    this.#seedStars();
     this.#bindEvents();
     this.#renderLegend();
     this.#renderSelectedPanel();
-    this.#updatePanels();
+    this.#updatePanels(true);
     this.#startLoop();
   }
 
@@ -199,12 +203,12 @@ export class SolarSystemApp {
     this.#container.querySelector('#solar-reset')?.addEventListener('click', () => {
       this.#simulationDays = 0;
       this.#lastTimestamp = 0;
-      this.#updatePanels();
+      this.#updatePanels(true);
     });
 
     this.#container.querySelector('#solar-speed')?.addEventListener('change', (event) => {
       this.#daysPerSecond = Number(event.target.value) || DEFAULT_SPEED;
-      this.#updatePanels();
+      this.#updatePanels(true);
     });
 
     this.#canvas?.addEventListener('click', (event) => {
@@ -221,7 +225,7 @@ export class SolarSystemApp {
           this.#selectedPlanet = name;
           this.#renderLegend();
           this.#renderSelectedPanel();
-          this.#updatePanels();
+          this.#updatePanels(true);
           return;
         }
       }
@@ -239,11 +243,23 @@ export class SolarSystemApp {
       }
 
       this.#drawScene();
-      this.#updatePanels();
+      this.#updatePanels(false, timestamp);
       this.#animationFrame = requestAnimationFrame(loop);
     };
 
     this.#animationFrame = requestAnimationFrame(loop);
+  }
+
+  #seedStars() {
+    if (!this.#canvas) return;
+    const width = this.#canvas.width;
+    const height = this.#canvas.height;
+    this.#stars = Array.from({ length: 140 }, (_, index) => ({
+      x: (index * 97) % width,
+      y: (index * 53) % height,
+      size: (index % 3) + 1,
+      alpha: 0.2 + ((index % 7) / 10)
+    }));
   }
 
   #drawScene() {
@@ -264,13 +280,10 @@ export class SolarSystemApp {
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, width, height);
 
-    for (let i = 0; i < 140; i++) {
-      const starX = (i * 97) % width;
-      const starY = (i * 53) % height;
-      const alpha = 0.2 + ((i % 7) / 10);
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.fillRect(starX, starY, (i % 3) + 1, (i % 3) + 1);
-    }
+    this.#stars.forEach((star) => {
+      ctx.fillStyle = `rgba(255,255,255,${star.alpha})`;
+      ctx.fillRect(star.x, star.y, star.size, star.size);
+    });
 
     PLANETS.forEach((planet) => {
       const orbitRadius = orbitRadiusForDisplay(planet.orbitAU, orbitLimit);
@@ -343,7 +356,10 @@ export class SolarSystemApp {
     });
   }
 
-  #updatePanels() {
+  #updatePanels(force = false, timestamp = 0) {
+    if (!force && timestamp - this.#lastPanelRefresh < PANEL_UPDATE_INTERVAL_MS) return;
+    this.#lastPanelRefresh = timestamp || performance.now();
+
     const selected = PLANETS.find((planet) => planet.name === this.#selectedPlanet) || PLANETS[2];
 
     const clock = this.#container.querySelector('#solar-clock');
@@ -353,7 +369,7 @@ export class SolarSystemApp {
 
     const orbitProgress = ((this.#simulationDays % selected.orbitalPeriodDays) / selected.orbitalPeriodDays) * 100;
     const rotationCycle = Math.abs(selected.rotationPeriodDays);
-    const rotationProgress = ((Math.abs(this.#simulationDays) % rotationCycle) / rotationCycle) * 100;
+    const rotationProgress = ((this.#simulationDays % rotationCycle) / rotationCycle) * 100;
 
     const orbitValue = this.#container.querySelector('#solar-orbit-progress-value');
     if (orbitValue) orbitValue.textContent = `${orbitProgress.toFixed(1)}%`;
@@ -416,7 +432,7 @@ export class SolarSystemApp {
         this.#selectedPlanet = button.dataset.planet;
         this.#renderLegend();
         this.#renderSelectedPanel();
-        this.#updatePanels();
+        this.#updatePanels(true);
       });
     });
   }
