@@ -5,6 +5,16 @@ const EARTH_DAY_HOURS = 24;
 const DEFAULT_SPEED = 30;
 const PANEL_UPDATE_INTERVAL_MS = 100;
 const SPEED_OPTIONS = [1, 7, 30, 90, 365, 3650];
+const SATELLITE_DISPLAY_SCALE = 120_000;
+const ACTIVE_SATELLITE_PHASES = new Set([
+  'COUNTDOWN',
+  'IGNITION',
+  'LIFTOFF',
+  'ASCENT',
+  'ORBIT_INSERTION',
+  'ORBITAL_OPERATIONS',
+  'PAUSED'
+]);
 
 const PLANETS = [
   {
@@ -104,6 +114,19 @@ function formatOrbit(days) {
   return `${(days / 365.256).toFixed(2)} Earth years`;
 }
 
+function formatMissionPhase(phase) {
+  return String(phase ?? 'UNKNOWN').toLowerCase().replaceAll('_', ' ');
+}
+
+function safeText(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function orbitRadiusForDisplay(orbitAU, maxRadius) {
   const normalized = Math.log10(orbitAU + 1) / ORBIT_SCALE_DENOMINATOR;
   return 44 + normalized * Math.max(120, maxRadius - 52);
@@ -187,6 +210,10 @@ export class SolarSystemApp {
             <section class="solar-panel">
               <h3>Planetary data</h3>
               <div class="solar-legend" id="solar-legend"></div>
+            </section>
+            <section class="solar-panel">
+              <h3>Launched satellites</h3>
+              <div class="solar-satellite-list" id="solar-satellite-list"></div>
             </section>
           </aside>
         </div>
@@ -309,6 +336,7 @@ export class SolarSystemApp {
     ctx.fillText('Sun', centerX - 14, centerY + 46);
 
     this.#planetHitAreas.clear();
+    const planetPositions = new Map();
 
     PLANETS.forEach((planet) => {
       const orbitRadius = orbitRadiusForDisplay(planet.orbitAU, orbitLimit);
@@ -316,6 +344,8 @@ export class SolarSystemApp {
       const x = centerX + Math.cos(angle) * orbitRadius;
       const y = centerY + Math.sin(angle) * orbitRadius;
       const selected = planet.name === this.#selectedPlanet;
+
+      planetPositions.set(planet.name, { x, y, orbitRadius });
 
       this.#planetHitAreas.set(planet.name, { x, y, radius: planet.radius });
 
@@ -355,6 +385,58 @@ export class SolarSystemApp {
       ctx.font = selected ? 'bold 12px system-ui' : '11px system-ui';
       ctx.fillText(planet.name, x + planet.radius + 6, y + 4);
     });
+
+    this.#drawSatellites(ctx, planetPositions.get('Earth'));
+  }
+
+  #drawSatellites(ctx, earthPosition) {
+    if (!earthPosition) return;
+
+    const satellites = hive.listSpaceMissions().filter((mission) => ACTIVE_SATELLITE_PHASES.has(mission.phase));
+    if (!satellites.length) return;
+
+    satellites.forEach((mission, index) => {
+      const position = mission.state?.position;
+      if (!position) return;
+
+      const x = earthPosition.x + (Number(position.x) || 0) / SATELLITE_DISPLAY_SCALE;
+      const y = earthPosition.y - (Number(position.y) || 0) / SATELLITE_DISPLAY_SCALE;
+      const distance = Math.max(18, Math.hypot(x - earthPosition.x, y - earthPosition.y));
+      const accent = index % 2 === 0 ? 'rgba(79, 195, 247, 0.9)' : 'rgba(255, 215, 0, 0.9)';
+
+      ctx.beginPath();
+      ctx.arc(earthPosition.x, earthPosition.y, distance, 0, TAU);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.moveTo(earthPosition.x, earthPosition.y);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = 'rgba(79, 195, 247, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x, y, 4.2, 0, TAU);
+      ctx.fillStyle = accent;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, TAU);
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '10px system-ui';
+      ctx.fillText(mission.vehicle || mission.name || mission.id, x + 10, y - 8);
+    });
   }
 
   #updatePanels(force = false, timestamp = 0) {
@@ -383,6 +465,8 @@ export class SolarSystemApp {
 
     const rotationBar = this.#container.querySelector('#solar-rotation-progress-bar');
     if (rotationBar) rotationBar.style.width = `${rotationProgress}%`;
+
+    this.#renderSatellitePanel();
   }
 
   #renderSelectedPanel() {
@@ -436,5 +520,29 @@ export class SolarSystemApp {
         this.#updatePanels(true);
       });
     });
+  }
+
+  #renderSatellitePanel() {
+    const satelliteList = this.#container.querySelector('#solar-satellite-list');
+    if (!satelliteList) return;
+
+    const satellites = hive.listSpaceMissions().filter((mission) => ACTIVE_SATELLITE_PHASES.has(mission.phase));
+    satelliteList.innerHTML = `
+      <div class="solar-source-note">
+        Launches from Mission Control appear here as active missions around Earth. The mission moves through countdown,
+        liftoff, ascent, and orbit insertion before settling into orbital operations.
+      </div>
+      ${satellites.length
+        ? satellites.map((mission) => {
+            const altitudeKm = ((Number(mission.telemetry?.altitude) || 0) / 1000).toFixed(1);
+            return `
+              <div class="solar-satellite-row">
+                <div class="solar-satellite-name">${safeText(mission.name || mission.vehicle || mission.id)}</div>
+                <div class="solar-satellite-meta">${safeText(mission.vehicle || mission.id)} • ${safeText(formatMissionPhase(mission.phase))} • ${altitudeKm} km</div>
+              </div>
+            `;
+          }).join('')
+        : '<div class="solar-satellite-empty">No launched satellites yet. Start one in Mission Control to watch it appear near Earth.</div>'}
+    `;
   }
 }

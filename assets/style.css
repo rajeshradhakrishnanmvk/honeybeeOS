@@ -731,6 +731,38 @@ body {
   color: var(--text-secondary);
 }
 
+.solar-satellite-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solar-satellite-row {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+
+.solar-satellite-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.solar-satellite-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.solar-satellite-empty {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 /* ─── Mission Control App ───────────────────────────────────────────── */
 .mission-control-app {
   display: flex;
