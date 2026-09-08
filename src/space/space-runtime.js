@@ -2,6 +2,8 @@ import { SpaceMission, MissionPhase } from './mission.js';
 
 const SPACE_MISSIONS_ROOT = 'space/missions';
 const SPACE_TELEMETRY_ROOT = 'space/telemetry';
+const INITIAL_EARTH_LAUNCHERS = 6;
+const TRANSFER_DAYS_PER_TICK = 5;
 const SUBSYSTEM_ROLES = [
   'flight-computer',
   'guidance',
@@ -18,10 +20,13 @@ export class SpaceRuntime {
   #hive = null;
   #timer = null;
   #tickSeconds = 1;
+  #transferDaysPerTick = TRANSFER_DAYS_PER_TICK;
   #persistenceCounter = 0;
   #missionResumePhases = new Map();
   #tickInProgress = false;
   #writeLocks = new Map();
+  #planetLauncherInventory = new Map([['Earth', INITIAL_EARTH_LAUNCHERS]]);
+  #launcherTransfers = [];
 
   init(hive) {
     this.#hive = hive;
@@ -33,8 +38,8 @@ export class SpaceRuntime {
     this.#timer = null;
   }
 
-  createMission({ id, name, vehicle, orbit, state } = {}) {
-    const mission = new SpaceMission({ id, name, vehicle, orbit, state });
+  createMission({ id, name, vehicle, orbit, metadata, state } = {}) {
+    const mission = new SpaceMission({ id, name, vehicle, orbit, metadata, state });
     this.#missions.set(mission.id, mission);
     this.#emit('mission.created', mission.snapshot());
     this.#persistMission(mission).catch(() => {});
@@ -56,6 +61,97 @@ export class SpaceRuntime {
     this.#emit('mission.launch.requested', { missionId: id, countdownSeconds });
     await this.#persistMission(mission);
     return mission.snapshot();
+  }
+
+  getLauncherInventory() {
+    return Object.fromEntries(this.#planetLauncherInventory.entries());
+  }
+
+  listLauncherTransfers() {
+    return this.#launcherTransfers.map((transfer) => ({ ...transfer }));
+  }
+
+  sendLauncherCraft(fromPlanet, toPlanet, totalDays) {
+    const from = String(fromPlanet || 'Earth');
+    const to = String(toPlanet || 'Earth');
+    const days = Math.max(1, Number(totalDays) || 1);
+
+    if (from === to) throw new Error('Origin and destination must be different planets');
+    const available = this.#launcherCount(from);
+    if (available <= 0) throw new Error(`No launcher craft available at ${from}`);
+
+    this.#planetLauncherInventory.set(from, Math.max(0, available - 1));
+    const transfer = {
+      id: `XFER-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+      from,
+      to,
+      totalDays: days,
+      remainingDays: days,
+      createdAt: Date.now()
+    };
+    this.#launcherTransfers.push(transfer);
+    this.#emit('launcher.transfer.started', transfer);
+    return { ...transfer };
+  }
+
+  advanceLauncherTransfers(elapsedDays) {
+    const days = Math.max(0, Number(elapsedDays) || 0);
+    if (days <= 0 || !this.#launcherTransfers.length) return [];
+
+    const arrived = [];
+    this.#launcherTransfers = this.#launcherTransfers.filter((transfer) => {
+      transfer.remainingDays = Math.max(0, transfer.remainingDays - days);
+      if (transfer.remainingDays <= 0) {
+        arrived.push({ ...transfer });
+        return false;
+      }
+      return true;
+    });
+
+    for (const transfer of arrived) {
+      this.#planetLauncherInventory.set(transfer.to, this.#launcherCount(transfer.to) + 1);
+      this.#emit('launcher.transfer.arrived', transfer);
+    }
+
+    return arrived;
+  }
+
+  async launchSatelliteFromPlanet({
+    planet = 'Earth',
+    countdownSeconds = 5,
+    id,
+    name,
+    vehicle,
+    orbit,
+    metadata = {}
+  } = {}) {
+    const originPlanet = String(planet || 'Earth');
+    const available = this.#launcherCount(originPlanet);
+    if (available <= 0) {
+      const inbound = this.#nextInboundTransfer(originPlanet);
+      if (inbound) {
+        throw new Error(
+          `No launcher craft available at ${originPlanet} yet. Inbound transfer ${inbound.id} from ${inbound.from} arrives in ${inbound.remainingDays.toFixed(1)} days.`
+        );
+      }
+      throw new Error(`No launcher craft available at ${originPlanet}`);
+    }
+
+    const mission = this.createMission({
+      id,
+      name,
+      vehicle,
+      orbit,
+      metadata: {
+        ...metadata,
+        originPlanet,
+        launchSite: originPlanet
+      }
+    });
+
+    this.#planetLauncherInventory.set(originPlanet, Math.max(0, available - 1));
+    this.#emit('launcher.consumed', { planet: originPlanet, missionId: mission.id });
+    return this.launchMission(mission.id, countdownSeconds);
   }
 
   pauseMission(id) {
@@ -116,6 +212,8 @@ export class SpaceRuntime {
         }
       }
 
+      this.advanceLauncherTransfers(this.#transferDaysPerTick);
+
       this.#persistenceCounter += 1;
       if (this.#persistenceCounter >= 5) {
         this.#persistenceCounter = 0;
@@ -170,6 +268,21 @@ export class SpaceRuntime {
     const mission = this.#missions.get(id);
     if (!mission) throw new Error(`Mission not found: ${id}`);
     return mission;
+  }
+
+  #launcherCount(planet) {
+    return this.#planetLauncherInventory.get(planet) || 0;
+  }
+
+  #nextInboundTransfer(planet) {
+    let candidate = null;
+    for (const transfer of this.#launcherTransfers) {
+      if (transfer.to !== planet) continue;
+      if (!candidate || transfer.remainingDays < candidate.remainingDays) {
+        candidate = transfer;
+      }
+    }
+    return candidate;
   }
 
   #queuePathWrite(path, operation) {

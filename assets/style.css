@@ -800,11 +800,19 @@ body {
 }
 
 .mission-world {
+  --mission-planet-accent: #4fc3f7;
+  --mission-orbit-duration: 7.2s;
+  --mission-orbit-duration-2: 9.72s;
+  --mission-orbit-duration-3: 12.6s;
+  --mission-spin-duration: 5.2s;
+  --mission-sat-scale: 1;
+  --mission-thruster-opacity: 0.25;
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  border: 1px dashed rgba(255,255,255,0.16);
+  border: 1px dashed color-mix(in srgb, var(--mission-planet-accent) 48%, rgba(255,255,255,0.18));
   position: relative;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.03), rgba(255,255,255,0));
 }
 
 .mission-earth {
@@ -813,20 +821,96 @@ body {
   top: 50%;
   transform: translate(-50%, -50%);
   font-size: 56px;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--mission-planet-accent) 62%, transparent));
+  animation: mission-planet-spin var(--mission-spin-duration) linear infinite;
 }
 
 .mission-sat {
   position: absolute;
-  left: 70%;
-  top: 24%;
+  left: 50%;
+  top: 50%;
   font-size: 28px;
+  transform-origin: 0 0;
+  animation: mission-satellite-orbit var(--mission-orbit-duration) linear infinite;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.35));
+}
+
+.mission-sat-secondary {
+  font-size: 18px;
+  opacity: 0.85;
+  animation: mission-satellite-orbit-secondary var(--mission-orbit-duration-2) linear infinite;
+}
+
+.mission-sat-tertiary {
+  font-size: 14px;
+  opacity: 0.75;
+  animation: mission-satellite-orbit-tertiary var(--mission-orbit-duration-3) linear infinite;
+}
+
+.mission-sat::after {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 18px;
+  width: 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,215,0,var(--mission-thruster-opacity)), rgba(255,255,255,0));
 }
 
 .mission-orbit {
   position: absolute;
   inset: 22px;
-  border: 1px solid rgba(79, 195, 247, 0.35);
+  border: 1px solid color-mix(in srgb, var(--mission-planet-accent) 48%, rgba(79, 195, 247, 0.25));
   border-radius: 50%;
+}
+
+.mission-orbit + .mission-orbit {
+  inset: 38px;
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.mission-stage-glow {
+  position: absolute;
+  inset: 48px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--mission-planet-accent) 24%, transparent), transparent 65%);
+}
+
+.mission-stage-label {
+  margin-top: 10px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mission-stage-note {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+@keyframes mission-satellite-orbit {
+  0% { transform: rotate(0deg) translateX(90px) scale(var(--mission-sat-scale)); }
+  100% { transform: rotate(360deg) translateX(90px) scale(var(--mission-sat-scale)); }
+}
+
+@keyframes mission-planet-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes mission-satellite-orbit-secondary {
+  0% { transform: rotate(35deg) translateX(68px) scale(calc(var(--mission-sat-scale) * 0.92)); }
+  100% { transform: rotate(395deg) translateX(68px) scale(calc(var(--mission-sat-scale) * 0.92)); }
+}
+
+@keyframes mission-satellite-orbit-tertiary {
+  0% { transform: rotate(130deg) translateX(112px) scale(calc(var(--mission-sat-scale) * 0.86)); }
+  100% { transform: rotate(490deg) translateX(112px) scale(calc(var(--mission-sat-scale) * 0.86)); }
 }
 
 .mission-grid {
@@ -856,6 +940,101 @@ body {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.mission-launch-site {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.mission-launch-message {
+  margin-top: 8px;
+  color: var(--accent-blue);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.mission-logistics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mission-logistics-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mission-logistics-field span {
+  min-width: 36px;
+}
+
+.mission-logistics-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mission-transfer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mission-transfer-row {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+
+.mission-transfer-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mission-transfer-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.mission-transfer-progress {
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.mission-transfer-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4fc3f7, #f9dd71);
+}
+
+.mission-hive-stats {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.mission-hive-events {
+  margin-top: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
 }
 
 .mission-log {

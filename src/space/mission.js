@@ -36,12 +36,14 @@ export class SpaceMission {
     name,
     vehicle = 'HB-SAT-1',
     orbit = { altitude: 400_000, inclination: 51.6 },
+    metadata = {},
     state = null
   }) {
     this.id = id || crypto.randomUUID();
     this.name = name || this.id;
     this.vehicle = vehicle;
     this.orbit = orbit;
+    this.metadata = { ...metadata };
     this.createdAt = Date.now();
     this.updatedAt = Date.now();
     this.subsystemBeeIds = [];
@@ -145,6 +147,7 @@ export class SpaceMission {
       name: this.name,
       vehicle: this.vehicle,
       orbit: this.orbit,
+      metadata: { ...this.metadata },
       phase: this.#phase,
       countdownSeconds: this.#countdownSeconds,
       paused: this.#paused,
@@ -160,6 +163,7 @@ export class SpaceMission {
   restore(snapshot) {
     this.state = snapshot.state;
     this.subsystemBeeIds = snapshot.subsystemBeeIds || [];
+    this.metadata = { ...(snapshot.metadata || {}) };
     this.#phase = snapshot.phase || MissionPhase.READY;
     this.#timelineIndex = Math.max(
       -1,

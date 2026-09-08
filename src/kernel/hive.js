@@ -238,9 +238,14 @@ export class Hive {
   listSpaceMissions() { return this.space?.listMissions() || []; }
   getSpaceMission(id) { return this.space?.getMission(id); }
   launchSpaceMission(id, countdownSeconds) { return this.space?.launchMission(id, countdownSeconds); }
+  launchSatelliteFromPlanet(options) { return this.space?.launchSatelliteFromPlanet(options); }
   pauseSpaceMission(id) { return this.space?.pauseMission(id); }
   resumeSpaceMission(id) { return this.space?.resumeMission(id); }
   abortSpaceMission(id) { return this.space?.abortMission(id); }
+  getLauncherInventory() { return this.space?.getLauncherInventory() || {}; }
+  listLauncherTransfers() { return this.space?.listLauncherTransfers() || []; }
+  sendLauncherCraft(fromPlanet, toPlanet, totalDays) { return this.space?.sendLauncherCraft(fromPlanet, toPlanet, totalDays); }
+  advanceLauncherTransfers(elapsedDays) { return this.space?.advanceLauncherTransfers(elapsedDays) || []; }
 
   emit(type, payload, source) { return this.bus?.emit(type, payload, source); }
   on(type, handler) { this.bus?.on(type, handler); }

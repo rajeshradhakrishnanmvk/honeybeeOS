@@ -140,6 +140,10 @@ function rotationAngle(planet, simulationDays) {
   return (simulationDays / planet.rotationPeriodDays) * TAU;
 }
 
+function planetByName(name) {
+  return PLANETS.find((planet) => planet.name === name) || PLANETS[2];
+}
+
 export const SolarSystemManifest = {
   id: 'solar-system',
   name: '🪐 Solar System',
@@ -258,6 +262,7 @@ export class SolarSystemApp {
         }
       }
     });
+
   }
 
   #startLoop() {
@@ -265,7 +270,8 @@ export class SolarSystemApp {
       if (!this.#paused) {
         if (this.#lastTimestamp) {
           const elapsedSeconds = (timestamp - this.#lastTimestamp) / 1000;
-          this.#simulationDays += elapsedSeconds * this.#daysPerSecond;
+          const elapsedDays = elapsedSeconds * this.#daysPerSecond;
+          this.#simulationDays += elapsedDays;
         }
         this.#lastTimestamp = timestamp;
       }
@@ -386,26 +392,30 @@ export class SolarSystemApp {
       ctx.fillText(planet.name, x + planet.radius + 6, y + 4);
     });
 
-    this.#drawSatellites(ctx, planetPositions.get('Earth'));
+    this.#drawSatellites(ctx, planetPositions);
   }
 
-  #drawSatellites(ctx, earthPosition) {
-    if (!earthPosition) return;
+  #drawSatellites(ctx, planetPositions) {
+    if (!planetPositions) return;
 
     const satellites = hive.listSpaceMissions().filter((mission) => ACTIVE_SATELLITE_PHASES.has(mission.phase));
     if (!satellites.length) return;
 
     satellites.forEach((mission, index) => {
+      const originPlanet = mission.metadata?.originPlanet || 'Earth';
+      const anchor = planetPositions.get(originPlanet) || planetPositions.get('Earth');
+      if (!anchor) return;
+
       const position = mission.state?.position;
       if (!position) return;
 
-      const x = earthPosition.x + (Number(position.x) || 0) / SATELLITE_DISPLAY_SCALE;
-      const y = earthPosition.y - (Number(position.y) || 0) / SATELLITE_DISPLAY_SCALE;
-      const distance = Math.max(18, Math.hypot(x - earthPosition.x, y - earthPosition.y));
+      const x = anchor.x + (Number(position.x) || 0) / SATELLITE_DISPLAY_SCALE;
+      const y = anchor.y - (Number(position.y) || 0) / SATELLITE_DISPLAY_SCALE;
+      const distance = Math.max(18, Math.hypot(x - anchor.x, y - anchor.y));
       const accent = index % 2 === 0 ? 'rgba(79, 195, 247, 0.9)' : 'rgba(255, 215, 0, 0.9)';
 
       ctx.beginPath();
-      ctx.arc(earthPosition.x, earthPosition.y, distance, 0, TAU);
+      ctx.arc(anchor.x, anchor.y, distance, 0, TAU);
       ctx.strokeStyle = 'rgba(255,255,255,0.06)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
@@ -413,7 +423,7 @@ export class SolarSystemApp {
       ctx.setLineDash([]);
 
       ctx.beginPath();
-      ctx.moveTo(earthPosition.x, earthPosition.y);
+      ctx.moveTo(anchor.x, anchor.y);
       ctx.lineTo(x, y);
       ctx.strokeStyle = 'rgba(79, 195, 247, 0.18)';
       ctx.lineWidth = 1;
@@ -435,7 +445,7 @@ export class SolarSystemApp {
 
       ctx.fillStyle = '#ffffff';
       ctx.font = '10px system-ui';
-      ctx.fillText(mission.vehicle || mission.name || mission.id, x + 10, y - 8);
+      ctx.fillText(`${originPlanet}: ${mission.vehicle || mission.name || mission.id}`, x + 10, y - 8);
     });
   }
 
@@ -443,7 +453,7 @@ export class SolarSystemApp {
     if (!force && timestamp - this.#lastPanelRefresh < PANEL_UPDATE_INTERVAL_MS) return;
     this.#lastPanelRefresh = timestamp || performance.now();
 
-    const selected = PLANETS.find((planet) => planet.name === this.#selectedPlanet) || PLANETS[2];
+    const selected = planetByName(this.#selectedPlanet);
 
     const clock = this.#container.querySelector('#solar-clock');
     if (clock) {
@@ -470,7 +480,7 @@ export class SolarSystemApp {
   }
 
   #renderSelectedPanel() {
-    const selected = PLANETS.find((planet) => planet.name === this.#selectedPlanet) || PLANETS[2];
+    const selected = planetByName(this.#selectedPlanet);
     const selectedPanel = this.#container.querySelector('#solar-selected-panel');
     if (selectedPanel) {
       selectedPanel.innerHTML = `
@@ -529,20 +539,21 @@ export class SolarSystemApp {
     const satellites = hive.listSpaceMissions().filter((mission) => ACTIVE_SATELLITE_PHASES.has(mission.phase));
     satelliteList.innerHTML = `
       <div class="solar-source-note">
-        Launches from Mission Control appear here as active missions around Earth. The mission moves through countdown,
-        liftoff, ascent, and orbit insertion before settling into orbital operations.
+        Satellites launch only from Mission Control. Any planet with an available launcher craft can be selected there.
+        Missions still pass through countdown, liftoff, ascent, and orbit insertion before orbital operations.
       </div>
       ${satellites.length
         ? satellites.map((mission) => {
+            const originPlanet = mission.metadata?.originPlanet || 'Earth';
             const altitudeKm = ((Number(mission.telemetry?.altitude) || 0) / 1000).toFixed(1);
             return `
               <div class="solar-satellite-row">
                 <div class="solar-satellite-name">${safeText(mission.name || mission.vehicle || mission.id)}</div>
-                <div class="solar-satellite-meta">${safeText(mission.vehicle || mission.id)} • ${safeText(formatMissionPhase(mission.phase))} • ${altitudeKm} km</div>
+                <div class="solar-satellite-meta">${safeText(originPlanet)} • ${safeText(mission.vehicle || mission.id)} • ${safeText(formatMissionPhase(mission.phase))} • ${altitudeKm} km</div>
               </div>
             `;
           }).join('')
-        : '<div class="solar-satellite-empty">No launched satellites yet. Start one in Mission Control to watch it appear near Earth.</div>'}
+        : '<div class="solar-satellite-empty">No launched satellites yet. Launch from Mission Control.</div>'}
     `;
   }
 }
